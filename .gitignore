@@ -2,3 +2,6 @@ secret
 env
 *.m4a
 *.mp3
+.log
+.DS_Store
+node_modules
