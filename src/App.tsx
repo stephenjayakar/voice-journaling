@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import OpenAI from "openai";
 import ReactMarkdown from "react-markdown";
 
@@ -19,6 +19,31 @@ function App() {
   const [file, setFile] = useState<File | null>(null);
   const authenticated = openAIClient !== null;
   const [audioText, setAudioText] = useState("");
+  const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
+  const [chunks, setChunks] = useState<BlobPart[]>([]);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const startRecording = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.ondataavailable = (e) => {
+      setChunks((prevChunks) => [...prevChunks, e.data]);
+    };
+    mediaRecorder.start();
+    setRecorder(mediaRecorder);
+  };
+
+  const stopRecording = () => {
+    recorder?.stop();
+    const blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
+    const audioURL = window.URL.createObjectURL(blob);
+    audioRef.current!.src = audioURL;
+    setChunks([]);
+    setRecorder(null);
+    setFile(
+      new File([blob], "recorded-audio.ogg", { type: "audio/ogg; codecs=opus" })
+    ); // convert Blob to File
+  };
 
   useEffect(() => {
     const storedApiKey = localStorage.getItem("API_KEY");
@@ -66,6 +91,10 @@ function App() {
           <button onClick={buttonPressed} type="submit">
             Upload
           </button>
+          <h1>Or Record Audio Below</h1>
+          <button onClick={startRecording}>Start recording</button>
+          <button onClick={stopRecording}>Stop recording</button>
+          <audio ref={audioRef} controls />
         </>
       )}
     </div>
