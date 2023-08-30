@@ -40,7 +40,7 @@ function App() {
     setChunks([]);
     setRecorder(null);
     setFile(
-      new File([blob], "recorded-audio.ogg", { type: "audio/ogg; codecs=opus" })
+      new File([blob], "recorded-audio.oga", { type: "audio/ogg; codecs=opus" })
     ); // convert Blob to File
   };
 
