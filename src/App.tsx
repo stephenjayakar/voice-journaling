@@ -10,7 +10,6 @@ const globalStyles = {
   fontFamily: "Arial",
   fontSize: 18,
   maxWidth: 500,
-  minWidth: 500,
 };
 
 function App() {
