@@ -20,7 +20,7 @@ function App() {
   const [audioText, setAudioText] = useState("");
   const [recorder, setRecorder] = useState<MediaRecorder | null>(null);
   const [chunks, setChunks] = useState<BlobPart[]>([]);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [audio, setAudio] = useState("");
 
   const startRecording = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -34,14 +34,15 @@ function App() {
 
   const stopRecording = () => {
     recorder?.stop();
-    const blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
-    const audioURL = window.URL.createObjectURL(blob);
-    audioRef.current!.src = audioURL;
-    setChunks([]);
-    setRecorder(null);
-    setFile(
-      new File([blob], "recorded-audio.oga", { type: "audio/ogg; codecs=opus" })
-    ); // convert Blob to File
+    recorder!.onstop = () => {
+      console.log("meow");
+      const blob = new Blob(chunks, { type: "audio/ogg" });
+      const audioURL = URL.createObjectURL(blob);
+      setAudio(audioURL);
+      setChunks([]);
+      setRecorder(null);
+      setFile(new File([blob], "recorded-audio.oga", { type: "audio/ogg" })); // convert Blob to File
+    };
   };
 
   useEffect(() => {
@@ -91,9 +92,12 @@ function App() {
             Upload
           </button>
           <h1>Or Record Audio Below</h1>
-          <button onClick={startRecording}>Start recording</button>
-          <button onClick={stopRecording}>Stop recording</button>
-          <audio ref={audioRef} controls />
+          {!recorder ? (
+            <button onClick={startRecording}>Start recording</button>
+          ) : (
+            <button onClick={stopRecording}>Stop recording</button>
+          )}
+          {audio && <audio src={audio} controls />}
         </>
       )}
     </div>
