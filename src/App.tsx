@@ -6,16 +6,6 @@ const createClient = (apiKey: string): OpenAI => {
   return new OpenAI({ apiKey, dangerouslyAllowBrowser: true });
 };
 
-interface Message {
-  sender: Sender;
-  contents: string;
-}
-
-enum Sender {
-  Me = "Me",
-  ChatGPT = "ChatGPT",
-}
-
 const globalStyles = {
   fontFamily: "Arial",
   fontSize: 18,
@@ -26,9 +16,9 @@ const globalStyles = {
 function App() {
   const [apiKey, setApiKey] = useState("");
   const [openAIClient, setOpenAIClient] = useState<OpenAI | null>(null);
-  const [prompt, setPrompt] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [file, setFile] = useState<File | null>(null);
   const authenticated = openAIClient !== null;
+  const [audioText, setAudioText] = useState("");
 
   useEffect(() => {
     const storedApiKey = localStorage.getItem("API_KEY");
@@ -42,30 +32,18 @@ function App() {
     setOpenAIClient(createClient(apiKey));
   };
 
-  const completion = async (fullPrompt: string) => {
-    if (!openAIClient) return null;
-    const chat_completion = await openAIClient.chat.completions.create({
-      model: "gpt-4-32k",
-      messages: [{ role: "user", content: fullPrompt }],
-    });
-    return chat_completion;
-  };
-
   const buttonPressed = async () => {
-    if (prompt && openAIClient) {
-      const res = await completion(prompt);
-      const content = res!.choices
-        .map((c: any) => c.message!.content)
-        .join("\n");
-      setMessages([
-        ...messages,
-        { sender: Sender.Me, contents: prompt },
-        { sender: Sender.ChatGPT, contents: content },
-      ]);
+    if (file && openAIClient) {
+      const resp = await openAIClient.audio.transcriptions.create({
+        file: file,
+        model: "whisper-1",
+      });
+      setAudioText(resp.text);
     }
   };
-
-  console.log(messages);
+  const handleChange = (event: any) => {
+    setFile(event.target.files[0]);
+  };
   return (
     <div style={globalStyles}>
       {!authenticated && (
@@ -82,27 +60,12 @@ function App() {
       {authenticated && (
         <>
           <p>✅ Authenticated!</p>
-          <span>
-            <p>Send previous responses?</p>
-          </span>
-          <div>
-            {messages.map((m) => {
-              return (
-                <div
-                  style={{
-                    backgroundColor:
-                      m.sender == Sender.ChatGPT ? "white" : "lightgrey",
-                  }}
-                >
-                  <span>
-                    {m.sender}: <ReactMarkdown>{m.contents}</ReactMarkdown>
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-          <input type="text" onChange={(e) => setPrompt(e.target.value)} />
-          <button onClick={buttonPressed}>Send</button>
+          <div>{audioText && <ReactMarkdown>{audioText}</ReactMarkdown>}</div>
+          <h1>Upload Audio File</h1>
+          <input type="file" onChange={handleChange} />
+          <button onClick={buttonPressed} type="submit">
+            Upload
+          </button>
         </>
       )}
     </div>
